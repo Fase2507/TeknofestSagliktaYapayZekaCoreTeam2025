@@ -5,7 +5,12 @@ from glob import glob
 import cv2
 import numpy as np
 import pandas as pd
-pth='../Yarışma 2.aşama MR Veri Seti Kümesi/Yarışma 2.aşama veri seti kümesi/Vaka_300663/MR/*/*.dcm'
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+import joblib
+
+
+pth='../../Yarışma 2.aşama MR Veri Seti Kümesi/Yarışma 2.aşama veri seti kümesi/Vaka_30*/*/*/*.dcm'
 
 def load_img_pth(pth):
     dicm=pydicom.dcmread(pth)
@@ -16,37 +21,12 @@ def load_img_pth(pth):
 def extract_features(img):
     mean_val=np.mean(img)
     std_val=np.std(img)
-    bright_ratio = np.sum(img > 100) / img.size
-    dark_ratio = np.sum(img < 20) / img.size
+    bright_ratio = np.sum(img > 120) / img.size
+    dark_ratio = np.sum(img < 30) / img.size
     return mean_val, std_val, bright_ratio, dark_ratio
 
 
-# def guess_sequence_type(img):
-#     mean_val = np.mean(img)
-#     std_val = np.std(img)
-#     bright_pixels_ratio = np.sum(img > 200) / img.size
-#     dark_pixels_ratio = np.sum(img < 30) / img.size
-#
-#     print(f"Mean: {mean_val:.2f}, Std: {std_val:.2f}, Bright Ratio: {bright_pixels_ratio:.2f}, Dark Ratio: {dark_pixels_ratio:.2f}")
-#
-#     if bright_pixels_ratio > 0.05 and std_val > 40:
-#         return "DWI"
-#     elif bright_pixels_ratio < 0.01 and dark_pixels_ratio > 0.5:
-#         return "ADC"
-#     elif mean_val > 80 and std_val > 30:
-#         return "T2A"
-#     else:
-#         return "UNKNOWN"
 
-# Test et
-
-
-# def loop():
-#     for pth in glob(path):
-#         img = load_img_pth(pth)
-#         seq_type = guess_sequence_type(img)
-#         print(f"Tahmini sekans türü: {seq_type}")
-# loop()
 
 
 def classify(mean, std, bright_ratio, dark_ratio):
@@ -83,3 +63,17 @@ with open('dicom_analysis.csv', 'w', newline='') as csvfile:
             })
         except Exception as e:
             print(f"HATA ({path}): {e}")
+
+df=pd.read_csv('dicom_analysis.csv')
+df=df[df['predicted_sequence']!='UNKNOWN']
+X = df[['mean', 'std', 'bright_ratio', 'dark_ratio']]
+y=df['predicted_sequence']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model=RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+joblib.dump(model, 'sequence_classifier.pkl')
+
+
+print("Eğitim tamamlandı. Doğruluk:", model.score(X_test, y_test))
