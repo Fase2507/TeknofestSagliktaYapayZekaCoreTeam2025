@@ -5,12 +5,13 @@ from glob import glob
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
-
+import joblib
 # 1️⃣  Gather DICOM paths
 dicom_paths = glob(
-    "../../../Yarışma 2.aşama MR Veri Seti Kümesi/Yarışma 2.aşama veri seti kümesi/Vaka_301*/*/*/*.dcm",
+    "../../../Yarışma 2.aşama MR Veri Seti Kümesi/Yarışma 2.aşama veri seti kümesi/Vaka_*/*/*/*.dcm",
     recursive=True
 )
+
 
 # 2️⃣  Feature extraction helpers
 def extract_features(img):
@@ -43,8 +44,9 @@ for path in tqdm(dicom_paths, desc="Reading DICOMs"):
         print(f"[WARN] Could not process {path}: {e}")
 
 features = np.asarray(features)
+scaler=StandardScaler()
+scaler.fit(features)
 scaled   = StandardScaler().fit_transform(features)
-
 # 4️⃣  K‑means clustering (k=3)
 kmeans  = KMeans(n_clusters=3, random_state=42)
 labels  = kmeans.fit_predict(scaled)
@@ -81,3 +83,10 @@ df[numeric_cols] = df[numeric_cols].round(3)
 # 9️⃣  Save CSV with human‑readable labels
 df.drop(columns=["cluster"]).to_csv("dicom_clustered.csv", index=False)
 print("✅  Finished. CSV saved as dicom_clustered.csv")
+
+# The StandardScaler used to normalize feature vectors
+# The trained KMeans model
+joblib.dump(scaler, "scaler.pkl")
+joblib.dump(kmeans, "kmeans_model.pkl")
+
+
