@@ -3,6 +3,7 @@ import pydicom
 import cv2
 import numpy as np
 import os
+from glob import glob
 
 # Load trained models
 kmeans = joblib.load("kmeans_model.pkl")
@@ -37,5 +38,6 @@ def classify_dcm(pth):
     return cluster_to_label.get(label, "Unknown")
 
 
-pth = "../../../Yarışma 2.aşama MR Veri Seti Kümesi/Yarışma 2.aşama veri seti kümesi/Vaka_300663/MR/Seri3/50467107.2.14.dcm"
-print(f"{pth} → {classify_dcm(pth)}")
+pth = "../../../Yarışma 2.aşama MR Veri Seti Kümesi/Yarışma 2.aşama veri seti kümesi/Vaka_302861/MR/Seri4/50479238.*.*.dcm"
+for pth in glob(pth):
+    print(f"{pth} → {classify_dcm(pth)}")

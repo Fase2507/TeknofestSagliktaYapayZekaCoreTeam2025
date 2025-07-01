@@ -6,12 +6,13 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 import joblib
+import json
+
 # 1️⃣  Gather DICOM paths
 dicom_paths = glob(
     "../../../Yarışma 2.aşama MR Veri Seti Kümesi/Yarışma 2.aşama veri seti kümesi/Vaka_*/*/*/*.dcm",
     recursive=True
 )
-
 
 # 2️⃣  Feature extraction helpers
 def extract_features(img):
@@ -65,6 +66,20 @@ print(df["cluster"].value_counts(), "\n")
 cluster_to_name = {0: "T2A", 1: "DWI", 2: "ADC"}  # <- change if needed
 df["label"] = df["cluster"].map(cluster_to_name)
 
+# Load JSON file
+with open('../../../MR (1).json') as f,open('../../../MR_Yeni (1).json') as f2:
+    json_data1 = json.load(f)
+    json_data2=json.load(f2)
+    json_data=json_data1+json_data2
+# Add LessionTypeName to DataFrame
+df['LessionTypeName'] = ''
+for _, row in df.iterrows():
+    image_id = os.path.basename(row['file'])
+    for obj in json_data:
+        if obj['ImageId'] == image_id:
+            df.loc[_, 'LessionTypeName'] = obj['LessionTypeName']
+            break
+
 # 8️⃣  Move / copy files into folders
 for _, row in df.iterrows():
     label_dir = os.path.join("classified", row["label"])
@@ -88,5 +103,3 @@ print("✅  Finished. CSV saved as dicom_clustered.csv")
 # The trained KMeans model
 joblib.dump(scaler, "scaler.pkl")
 joblib.dump(kmeans, "kmeans_model.pkl")
-
-
